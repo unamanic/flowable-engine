@@ -20,6 +20,7 @@ import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.flowable.common.engine.api.FlowableException;
 import org.flowable.common.engine.impl.el.ExpressionManager;
+import org.flowable.common.engine.impl.logging.DmnLoginSessionConstants;
 import org.flowable.dmn.api.DecisionExecutionAuditContainer;
 import org.flowable.dmn.engine.DmnEngineConfiguration;
 import org.flowable.dmn.engine.RuleEngineExecutor;
@@ -35,6 +36,7 @@ import org.flowable.dmn.engine.impl.hitpolicy.EvaluateRuleValidityBehavior;
 import org.flowable.dmn.engine.impl.persistence.entity.HistoricDecisionExecutionEntity;
 import org.flowable.dmn.engine.impl.persistence.entity.HistoricDecisionExecutionEntityManager;
 import org.flowable.dmn.engine.impl.util.CommandContextUtil;
+import org.flowable.dmn.engine.impl.util.DmnLoggingSessionUtil;
 import org.flowable.dmn.model.Decision;
 import org.flowable.dmn.model.DecisionRule;
 import org.flowable.dmn.model.DecisionTable;
@@ -146,13 +148,21 @@ public class RuleEngineExecutorImpl implements RuleEngineExecutor {
         }
 
         try {
+            DmnEngineConfiguration dmnEngineConfiguration = CommandContextUtil.getDmnEngineConfiguration();
+            if(dmnEngineConfiguration.isLoggingSessionEnabled()) {
+                DmnLoggingSessionUtil.addLoggingData(DmnLoginSessionConstants.TYPE_DECISION_STARTED, "Started evaluating decision table", decisionTable, executionContext);
+            }
+
+
             // evaluate rule conditions
             Map<Integer, List<RuleOutputClauseContainer>> validRuleOutputEntries = new HashMap<>();
 
             for (DecisionRule rule : decisionTable.getRules()) {
                 boolean ruleResult = executeRule(rule, executionContext);
+                DmnLoggingSessionUtil.addLoggingData(DmnLoginSessionConstants.TYPE_DECISION_RULE_EVALUATED, "DMN rule evaluated", decisionTable, executionContext);
 
                 if (ruleResult) {
+                    DmnLoggingSessionUtil.addLoggingData(DmnLoginSessionConstants.TYPE_DECISION_RULE_HIT, "DMN rule hit", decisionTable, executionContext);
                     // evaluate decision table hit policy validity
                     if (getHitPolicyBehavior(decisionTable.getHitPolicy()) instanceof EvaluateRuleValidityBehavior) {
                         ((EvaluateRuleValidityBehavior) getHitPolicyBehavior(decisionTable.getHitPolicy())).evaluateRuleValidity(rule.getRuleNumber(), executionContext);
@@ -187,6 +197,7 @@ public class RuleEngineExecutorImpl implements RuleEngineExecutor {
             executionContext.getAuditContainer().setFailed();
             executionContext.getAuditContainer().setExceptionMessage(getExceptionMessage(ade));
         }
+        DmnLoggingSessionUtil.addLoggingData(DmnLoginSessionConstants.TYPE_DECISION_COMPLETE, "Completed evaluating decision table", decisionTable, executionContext);
 
         LOGGER.debug("End table evaluation: {}", decisionTable.getId());
     }
