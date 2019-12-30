@@ -146,9 +146,9 @@ public class RuleEngineExecutorImpl implements RuleEngineExecutor {
         if (executionContext == null) {
             throw new FlowableException("no execution context available");
         }
+        DmnEngineConfiguration dmnEngineConfiguration = CommandContextUtil.getDmnEngineConfiguration();
 
         try {
-            DmnEngineConfiguration dmnEngineConfiguration = CommandContextUtil.getDmnEngineConfiguration();
             if(dmnEngineConfiguration.isLoggingSessionEnabled()) {
                 DmnLoggingSessionUtil.addLoggingData(DmnLoginSessionConstants.TYPE_DECISION_STARTED, "Started evaluating decision table", decisionTable, executionContext);
             }
@@ -159,10 +159,13 @@ public class RuleEngineExecutorImpl implements RuleEngineExecutor {
 
             for (DecisionRule rule : decisionTable.getRules()) {
                 boolean ruleResult = executeRule(rule, executionContext);
-                DmnLoggingSessionUtil.addLoggingData(DmnLoginSessionConstants.TYPE_DECISION_RULE_EVALUATED, "DMN rule evaluated", decisionTable, executionContext);
-
+                if(dmnEngineConfiguration.isLoggingSessionEnabled()) {
+                    DmnLoggingSessionUtil.addLoggingData(DmnLoginSessionConstants.TYPE_DECISION_RULE_EVALUATED, "DMN rule evaluated", decisionTable, executionContext);
+                }
                 if (ruleResult) {
-                    DmnLoggingSessionUtil.addLoggingData(DmnLoginSessionConstants.TYPE_DECISION_RULE_HIT, "DMN rule hit", decisionTable, executionContext);
+                    if(dmnEngineConfiguration.isLoggingSessionEnabled()) {
+                        DmnLoggingSessionUtil.addLoggingData(DmnLoginSessionConstants.TYPE_DECISION_RULE_HIT, "DMN rule hit", decisionTable, executionContext);
+                    }
                     // evaluate decision table hit policy validity
                     if (getHitPolicyBehavior(decisionTable.getHitPolicy()) instanceof EvaluateRuleValidityBehavior) {
                         ((EvaluateRuleValidityBehavior) getHitPolicyBehavior(decisionTable.getHitPolicy())).evaluateRuleValidity(rule.getRuleNumber(), executionContext);
@@ -197,8 +200,9 @@ public class RuleEngineExecutorImpl implements RuleEngineExecutor {
             executionContext.getAuditContainer().setFailed();
             executionContext.getAuditContainer().setExceptionMessage(getExceptionMessage(ade));
         }
-        DmnLoggingSessionUtil.addLoggingData(DmnLoginSessionConstants.TYPE_DECISION_COMPLETE, "Completed evaluating decision table", decisionTable, executionContext);
-
+        if(dmnEngineConfiguration.isLoggingSessionEnabled()) {
+            DmnLoggingSessionUtil.addLoggingData(DmnLoginSessionConstants.TYPE_DECISION_COMPLETE, "Completed evaluating decision table", decisionTable, executionContext);
+        }
         LOGGER.debug("End table evaluation: {}", decisionTable.getId());
     }
 
