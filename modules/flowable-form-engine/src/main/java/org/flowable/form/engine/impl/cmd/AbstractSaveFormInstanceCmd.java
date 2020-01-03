@@ -19,12 +19,14 @@ import org.flowable.common.engine.api.FlowableException;
 import org.flowable.common.engine.impl.identity.Authentication;
 import org.flowable.common.engine.impl.interceptor.Command;
 import org.flowable.common.engine.impl.interceptor.CommandContext;
+import org.flowable.common.engine.impl.logging.FormLoginSessionConstants;
 import org.flowable.form.api.FormInfo;
 import org.flowable.form.api.FormInstance;
 import org.flowable.form.engine.FormEngineConfiguration;
 import org.flowable.form.engine.impl.persistence.entity.FormInstanceEntity;
 import org.flowable.form.engine.impl.persistence.entity.FormInstanceEntityManager;
 import org.flowable.form.engine.impl.util.CommandContextUtil;
+import org.flowable.form.engine.impl.util.FormLoggingSessionUtil;
 import org.flowable.form.model.FormField;
 import org.flowable.form.model.FormFieldTypes;
 import org.flowable.form.model.SimpleFormModel;
@@ -102,6 +104,9 @@ public abstract class AbstractSaveFormInstanceCmd implements Command<FormInstanc
     @Override
     public FormInstance execute(CommandContext commandContext) {
         FormEngineConfiguration formEngineConfiguration = CommandContextUtil.getFormEngineConfiguration();
+
+        boolean loggingSession = formEngineConfiguration.isLoggingSessionEnabled();
+
         if (formInfo == null) {
             if (formModelId == null) {
                 throw new FlowableException("Invalid form model and no form model Id provided");
@@ -194,6 +199,10 @@ public abstract class AbstractSaveFormInstanceCmd implements Command<FormInstanc
             formInstanceEntityManager.update(formInstanceEntity);
         }
 
+
+        if(loggingSession){
+            FormLoggingSessionUtil.addLoggingData(FormLoginSessionConstants.TYPE_FORM_STARTED, "In Form", formInstanceEntity);
+        }
 
         return formInstanceEntity;
     }

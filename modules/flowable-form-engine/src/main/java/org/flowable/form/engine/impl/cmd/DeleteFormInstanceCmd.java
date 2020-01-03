@@ -18,9 +18,13 @@ import org.flowable.common.engine.api.FlowableIllegalArgumentException;
 import org.flowable.common.engine.api.FlowableObjectNotFoundException;
 import org.flowable.common.engine.impl.interceptor.Command;
 import org.flowable.common.engine.impl.interceptor.CommandContext;
+import org.flowable.common.engine.impl.logging.FormLoginSessionConstants;
+import org.flowable.form.api.FormInstance;
+import org.flowable.form.engine.FormEngineConfiguration;
 import org.flowable.form.engine.impl.persistence.entity.FormInstanceEntity;
 import org.flowable.form.engine.impl.persistence.entity.FormInstanceEntityManager;
 import org.flowable.form.engine.impl.util.CommandContextUtil;
+import org.flowable.form.engine.impl.util.FormLoggingSessionUtil;
 
 public class DeleteFormInstanceCmd implements Command<Void>, Serializable {
 
@@ -33,6 +37,9 @@ public class DeleteFormInstanceCmd implements Command<Void>, Serializable {
 
     @Override
     public Void execute(CommandContext commandContext) {
+        FormEngineConfiguration formEngineConfiguration = CommandContextUtil.getFormEngineConfiguration();
+        boolean loggingSession = formEngineConfiguration.isLoggingSessionEnabled();
+
         if (formInstanceId == null) {
             throw new FlowableIllegalArgumentException("formInstanceId is null");
         }
@@ -46,7 +53,11 @@ public class DeleteFormInstanceCmd implements Command<Void>, Serializable {
         if (formInstance.getFormValuesId() != null) {
             CommandContextUtil.getResourceEntityManager(commandContext).delete(formInstance.getFormValuesId());
         }
-        
+
+        if(loggingSession){
+            FormLoggingSessionUtil.addLoggingData(FormLoginSessionConstants.TYPE_FORM_DELETED, "Form Deleted", formInstance);
+        }
+
         formInstanceEntityManager.delete(formInstance);
 
         return null;

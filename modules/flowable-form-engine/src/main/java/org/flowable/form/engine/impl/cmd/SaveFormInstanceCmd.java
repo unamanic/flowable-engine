@@ -15,11 +15,15 @@ package org.flowable.form.engine.impl.cmd;
 import java.util.List;
 import java.util.Map;
 
+import org.flowable.common.engine.impl.interceptor.CommandContext;
+import org.flowable.common.engine.impl.logging.FormLoginSessionConstants;
 import org.flowable.form.api.FormInfo;
 import org.flowable.form.api.FormInstance;
 import org.flowable.form.api.FormInstanceQuery;
 import org.flowable.form.engine.FormEngineConfiguration;
 import org.flowable.form.engine.impl.persistence.entity.FormInstanceEntity;
+import org.flowable.form.engine.impl.util.CommandContextUtil;
+import org.flowable.form.engine.impl.util.FormLoggingSessionUtil;
 
 public class SaveFormInstanceCmd extends AbstractSaveFormInstanceCmd {
 
@@ -66,5 +70,19 @@ public class SaveFormInstanceCmd extends AbstractSaveFormInstanceCmd {
             return (FormInstanceEntity) formInstances.get(0);
         }
         return null;
+    }
+
+    @Override
+    public FormInstance execute(CommandContext commandContext) {
+        FormEngineConfiguration formEngineConfiguration = CommandContextUtil.getFormEngineConfiguration();
+        boolean loggingSession = formEngineConfiguration.isLoggingSessionEnabled();
+
+        FormInstance formInstance = super.execute(commandContext);
+
+        if(loggingSession){
+            FormLoggingSessionUtil.addLoggingData(FormLoginSessionConstants.TYPE_FORM_SAVED, "Form Saved", formInstance);
+        }
+
+        return formInstance;
     }
 }

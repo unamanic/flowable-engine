@@ -15,9 +15,14 @@ package org.flowable.form.engine.impl.cmd;
 import java.io.Serializable;
 import java.util.Map;
 
+import org.flowable.common.engine.impl.interceptor.CommandContext;
+import org.flowable.common.engine.impl.logging.FormLoginSessionConstants;
 import org.flowable.form.api.FormInfo;
+import org.flowable.form.api.FormInstance;
 import org.flowable.form.engine.FormEngineConfiguration;
 import org.flowable.form.engine.impl.persistence.entity.FormInstanceEntity;
+import org.flowable.form.engine.impl.util.CommandContextUtil;
+import org.flowable.form.engine.impl.util.FormLoggingSessionUtil;
 
 /**
  * @author Tijs Rademakers
@@ -56,4 +61,17 @@ public class CreateFormInstanceCmd extends AbstractSaveFormInstanceCmd implement
         return null;
     }
 
+    @Override
+    public FormInstance execute(CommandContext commandContext) {
+        FormEngineConfiguration formEngineConfiguration = CommandContextUtil.getFormEngineConfiguration();
+        boolean loggingSession = formEngineConfiguration.isLoggingSessionEnabled();
+
+        FormInstance formInstance = super.execute(commandContext);
+
+        if(loggingSession){
+            FormLoggingSessionUtil.addLoggingData(FormLoginSessionConstants.TYPE_FORM_CREATED, "Form Created", formInstance);
+        }
+
+        return formInstance;
+    }
 }
